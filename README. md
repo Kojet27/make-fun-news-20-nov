@@ -1,1 +1,9 @@
-Sum up 20 November's world news in one image
+# Sum up 20 November's world news in one image
+
+One-page newspaper for Friday, 20 November 2026 — six stories, one day.
+
+## How to run
+
+```bash
+pip install pillow
+python3 main.py

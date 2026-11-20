@@ -1,0 +1,142 @@
+#!/usr/bin/env python3
+"""
+Sum up 20 November 2026's world news in one image.
+Generates output.png — a 1024x1024 one-page newspaper with the
+six biggest stories of Friday, 20 November 2026.
+
+Run:  python3 main.py
+Needs: Pillow (pip install pillow). No network, no API key.
+"""
+from PIL import Image, ImageDraw, ImageFont
+import textwrap, os
+
+W, H = 1024, 1024
+BG = (253, 246, 227)
+INK = (20, 20, 20)
+RED = (178, 34, 34)
+GREY = (90, 90, 90)
+LIGHT = (238, 228, 205)
+
+SERIF = "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf"
+SERIF_B = "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf"
+SANS = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+SANS_B = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+
+def font(path, size):
+    try:
+        return ImageFont.truetype(path, size)
+    except OSError:
+        return ImageFont.load_default()
+
+def wrap(draw, text, fnt, width):
+    lines, line = [], ""
+    for word in text.split():
+        trial = (line + " " + word).strip()
+        if draw.textlength(trial, font=fnt) <= width:
+            line = trial
+        else:
+            if line:
+                lines.append(line)
+            line = word
+    if line:
+        lines.append(line)
+    return lines
+
+def draw_text(draw, x, y, text, fnt, fill=INK, width=900, leading=1.25):
+    lines = wrap(draw, text, fnt, width)
+    for ln in lines:
+        draw.text((x, y), ln, font=fnt, fill=fill)
+        y += int(fnt.size * leading)
+    return y
+
+def kicker(draw, x, y, text, color):
+    f = font(SANS_B, 20)
+    draw.text((x, y), text.upper(), font=f, fill=color)
+    return y + 28
+
+STORIES = [
+    {
+        "tag": "JUSTICE  •  THE HAGUE",
+        "color": (128, 0, 32),
+        "headline": "World Court rules Myanmar committed genocide against the Rohingya",
+        "body": "The International Court of Justice ruled on Thursday that Myanmar committed genocide against its Rohingya minority — the first such finding against a state by that court. In a 9–6 decision, judges found mass killings and widespread sexual violence intended to destroy a substantial part of the Rohingya population in northern Rakhine State.",
+    },
+    {
+        "tag": "POLITICS  •  SHENZHEN",
+        "color": (0, 70, 130),
+        "headline": "Trump, Xi and Putin hold first three-way summit",
+        "body": "The leaders of the US, China and Russia met in Shenzhen on Thursday and signed a four-point joint declaration. Talks lasted about 70 minutes, with no breakthrough announced on Ukraine, Iran or nuclear-arms limits.",
+    },
+    {
+        "tag": "CONFLICT  •  KYIV",
+        "color": (150, 60, 0),
+        "headline": "Russian strikes hit Kyiv bridges; 8 killed",
+        "body": "Overnight strikes targeted bridges in Kyiv and killed eight people, Mayor Vitali Klitschko said. Twenty-eight people were injured across attacks on nine regions.",
+    },
+    {
+        "tag": "ECONOMY  •  NEW YORK",
+        "color": (0, 100, 60),
+        "headline": "Stocks fall for a fifth straight day",
+        "body": "The S&P 500 lost about 2% on Thursday, its fifth straight session of losses. Japan's Nikkei fell 4.8% after Anthropic's Nasdaq debut, as investors questioned AI valuations.",
+    },
+    {
+        "tag": "CONFLICT  •  RIYADH",
+        "color": (120, 40, 120),
+        "headline": "Houthi missile damages Riyadh's PIF tower",
+        "body": "Houthi missiles hit Riyadh's financial district, damaging the Public Investment Fund tower and other buildings. Saudi Arabia said it intercepted another missile and five drones on Friday.",
+    },
+    {
+        "tag": "HEALTH  •  KENYA",
+        "color": (0, 120, 120),
+        "headline": "Kenya discharges its last Ebola patient",
+        "body": "Kenya discharged its last Ebola patient, 37 days after its first case — starting a 42-day countdown to an Ebola-free declaration. The one hopeful story of the day.",
+    },
+]
+
+def main():
+    img = Image.new("RGB", (W, H), BG)
+    d = ImageDraw.Draw(img)
+    d.rectangle([0, 0, W-1, H-1], outline=INK, width=4)
+    d.text((512, 28), "THE WORLD IN ONE PAGE", font=font(SERIF_B, 58),
+           fill=INK, anchor="mt")
+    d.text((512, 102), "FRIDAY, 20 NOVEMBER 2026  •  SIX STORIES, ONE DAY",
+           font=font(SANS_B, 22), fill=RED, anchor="mt")
+    d.line([(36, 140), (988, 140)], fill=INK, width=3)
+    d.line([(36, 146), (988, 146)], fill=RED, width=2)
+    s = STORIES[0]
+    y = 164
+    y = kicker(d, 48, y, s["tag"], s["color"])
+    y = draw_text(d, 48, y, s["headline"], font(SERIF_B, 36), width=928, leading=1.1)
+    y += 4
+    y = draw_text(d, 48, y, s["body"], font(SERIF, 21), width=928, leading=1.28)
+    d.line([(36, y + 10), (988, y + 10)], fill=INK, width=2)
+    y += 22
+    s = STORIES[1]
+    y = kicker(d, 48, y, s["tag"], s["color"])
+    y = draw_text(d, 48, y, s["headline"], font(SERIF_B, 30), width=928, leading=1.1)
+    y += 3
+    y = draw_text(d, 48, y, s["body"], font(SERIF, 20), width=928, leading=1.28)
+    d.line([(36, y + 10), (988, y + 10)], fill=INK, width=2)
+    y += 20
+    top = y
+    col_w, row_h = 452, 188
+    for i, s in enumerate(STORIES[2:]):
+        cx = 48 + (i % 2) * 478
+        cy = top + (i // 2) * (row_h + 12)
+        d.rectangle([cx - 12, cy - 8, cx + col_w + 4, cy + row_h - 6],
+                    fill=LIGHT, outline=s["color"], width=2)
+        yy = kicker(d, cx, cy, s["tag"], s["color"])
+        yy = draw_text(d, cx, yy, s["headline"], font(SERIF_B, 24),
+                       width=col_w, leading=1.1)
+        yy += 3
+        draw_text(d, cx, yy, s["body"], font(SANS, 17), width=col_w, leading=1.25)
+    fy = top + 2 * (row_h + 12) + 2
+    d.line([(36, fy - 8), (988, fy - 8)], fill=INK, width=2)
+    d.text((512, fy), "Sources: ICJ / One Turn / Just Security, 20 Nov 2026  •  Generated with Python + Pillow",
+           font=font(SANS, 15), fill=GREY, anchor="mt")
+    out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "output.png")
+    img.save(out, optimize=True)
+    print(f"Saved {out}  {img.size}  {os.path.getsize(out)/1024:.0f} KB")
+
+if __name__ == "__main__":
+    main()
